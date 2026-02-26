@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { calculateTotalScore, getSummaryText, getResetText, CheckData } from '@/lib/bodycheck';
+import { calculateTotalScore, getSummaryText, getResetText, getScoreLevel, CHECK_ITEMS, CheckData } from '@/lib/bodycheck';
 import AppLayout from '@/components/AppLayout';
-import BodyCheckForm from '@/components/BodyCheckForm';
-import ResultCard from '@/components/ResultCard';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
+import { ko } from 'date-fns/locale';
+import { motion } from 'framer-motion';
+import { Activity, ArrowRight, Edit3 } from 'lucide-react';
 
 interface DailyCheck {
   id: string;
@@ -22,10 +23,9 @@ interface DailyCheck {
 
 export default function TodayPage() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [todayCheck, setTodayCheck] = useState<DailyCheck | null>(null);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [editing, setEditing] = useState(false);
 
   const today = format(new Date(), 'yyyy-MM-dd');
 
@@ -40,53 +40,25 @@ export default function TodayPage() {
       .eq('user_id', user!.id)
       .eq('date', today)
       .maybeSingle();
-
     setTodayCheck(data);
     setLoading(false);
   };
 
-  const handleSubmit = async (checkData: CheckData) => {
-    if (!user) return;
-    setSaving(true);
-
-    const totalScore = calculateTotalScore(checkData);
-    const summaryText = getSummaryText(checkData, totalScore);
-    const resetText = getResetText(checkData, totalScore);
-
-    const record = {
-      user_id: user.id,
-      date: today,
-      neck_shoulder: checkData.neckShoulder,
-      jaw: checkData.jaw,
-      breath: checkData.breath,
-      eyes: checkData.eyes,
-      energy: checkData.energy,
-      total_score: totalScore,
-      summary_text: summaryText,
-      reset_text: resetText,
-    };
-
-    if (todayCheck) {
-      // Update
-      const { data } = await supabase
-        .from('daily_checks')
-        .update(record)
-        .eq('id', todayCheck.id)
-        .select()
-        .single();
-      if (data) setTodayCheck(data);
-    } else {
-      // Insert
-      const { data } = await supabase
-        .from('daily_checks')
-        .insert(record)
-        .select()
-        .single();
-      if (data) setTodayCheck(data);
-    }
-
-    setEditing(false);
-    setSaving(false);
+  const startCheck = () => navigate('/check');
+  const editCheck = () => {
+    if (!todayCheck) return;
+    navigate('/check', {
+      state: {
+        initialValues: {
+          neckShoulder: todayCheck.neck_shoulder,
+          jaw: todayCheck.jaw,
+          breath: todayCheck.breath,
+          eyes: todayCheck.eyes,
+          energy: todayCheck.energy,
+        },
+        existingId: todayCheck.id,
+      },
+    });
   };
 
   if (loading) {
@@ -99,70 +71,150 @@ export default function TodayPage() {
     );
   }
 
-  // Show result if today's check exists and not editing
-  if (todayCheck && !editing) {
+  const levelLabel: Record<string, string> = {
+    good: '안정',
+    mild: '경미',
+    moderate: '주의',
+    severe: '높음',
+  };
+
+  const levelRingColor: Record<string, string> = {
+    good: 'text-score-good',
+    mild: 'text-score-mild',
+    moderate: 'text-score-moderate',
+    severe: 'text-score-severe',
+  };
+
+  // No check today
+  if (!todayCheck) {
     return (
       <AppLayout>
-        <div className="mb-4">
-          <h1 className="text-lg font-semibold text-foreground">오늘의 체크 완료</h1>
-          <p className="text-xs text-muted-foreground">{today}</p>
+        <div className="mb-6">
+          <p className="text-sm text-muted-foreground">{format(new Date(), 'M월 d일 (EEEE)', { locale: ko })}</p>
+          <h1 className="text-xl font-bold text-foreground mt-1">오늘의 신체 신호</h1>
         </div>
 
-        <ResultCard
-          totalScore={todayCheck.total_score}
-          summaryText={todayCheck.summary_text}
-          resetText={todayCheck.reset_text}
-          showEditButton
-          onEdit={() => setEditing(true)}
-        />
-
-        <Link
-          to="/patterns"
-          className="mt-4 block text-center text-sm text-primary hover:underline"
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-2xl bg-card p-8 shadow-sm border border-border text-center"
         >
-          패턴 보기 →
-        </Link>
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+            <Activity className="h-8 w-8 text-primary" />
+          </div>
+          <h2 className="text-lg font-semibold text-foreground mb-2">아직 기록이 없어요</h2>
+          <p className="text-sm text-muted-foreground mb-6">20초면 충분합니다. 지금 체크해보세요.</p>
+
+          <motion.button
+            whileTap={{ scale: 0.97 }}
+            onClick={startCheck}
+            className="w-full rounded-2xl bg-primary py-4 text-base font-semibold text-primary-foreground shadow-md touch-target"
+          >
+            20초 점검 시작
+          </motion.button>
+        </motion.div>
       </AppLayout>
     );
   }
 
-  // Show form
+  // Has today's check
+  const level = getScoreLevel(todayCheck.total_score);
+  const fields = [
+    { key: 'neck_shoulder', value: todayCheck.neck_shoulder },
+    { key: 'jaw', value: todayCheck.jaw },
+    { key: 'breath', value: todayCheck.breath },
+    { key: 'eyes', value: todayCheck.eyes },
+    { key: 'energy', value: todayCheck.energy },
+  ];
+
+  const chipColors = ['text-score-good', 'text-score-mild', 'text-score-severe'];
+
   return (
     <AppLayout>
-      <div className="mb-4">
-        <h1 className="text-lg font-semibold text-foreground">
-          {editing ? '오늘 기록 수정' : '15초 점검 시작'}
-        </h1>
-        <p className="text-xs text-muted-foreground">
-          {editing ? '값을 변경하고 수정하기를 눌러주세요' : '지금 몸 상태를 가볍게 체크해보세요'}
-        </p>
+      <div className="mb-5">
+        <p className="text-sm text-muted-foreground">{format(new Date(), 'M월 d일 (EEEE)', { locale: ko })}</p>
+        <h1 className="text-xl font-bold text-foreground mt-1">오늘의 신체 신호</h1>
       </div>
 
-      <BodyCheckForm
-        initialValues={
-          todayCheck
-            ? {
-                neckShoulder: todayCheck.neck_shoulder,
-                jaw: todayCheck.jaw,
-                breath: todayCheck.breath,
-                eyes: todayCheck.eyes,
-                energy: todayCheck.energy,
-              }
-            : undefined
-        }
-        onSubmit={handleSubmit}
-        loading={saving}
-        isEdit={editing}
-      />
+      {/* Score Card */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="rounded-2xl bg-card p-6 shadow-sm border border-border mb-4"
+      >
+        <div className="flex items-center gap-5">
+          {/* Score ring */}
+          <div className="relative flex-shrink-0">
+            <svg width="80" height="80" viewBox="0 0 80 80">
+              <circle cx="40" cy="40" r="34" fill="none" stroke="hsl(var(--border))" strokeWidth="6" />
+              <circle
+                cx="40" cy="40" r="34"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="6"
+                strokeLinecap="round"
+                strokeDasharray={`${(todayCheck.total_score / 10) * 213.6} 213.6`}
+                transform="rotate(-90 40 40)"
+                className={levelRingColor[level]}
+              />
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <span className="text-xl font-bold text-foreground">{todayCheck.total_score}</span>
+              <span className="text-[10px] text-muted-foreground">/10</span>
+            </div>
+          </div>
 
-      {editing && (
+          <div className="flex-1 min-w-0">
+            <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium mb-1 ${
+              level === 'good' ? 'bg-score-good/15 text-score-good' :
+              level === 'mild' ? 'bg-score-mild/15 text-score-mild' :
+              level === 'moderate' ? 'bg-score-moderate/15 text-score-moderate' :
+              'bg-score-severe/15 text-score-severe'
+            }`}>
+              {levelLabel[level]}
+            </span>
+            <p className="text-sm font-medium text-foreground leading-relaxed">{todayCheck.summary_text}</p>
+            <p className="text-xs text-muted-foreground mt-1">💡 {todayCheck.reset_text}</p>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Metric chips */}
+      <div className="grid grid-cols-5 gap-2 mb-4">
+        {fields.map((field, i) => {
+          const info = CHECK_ITEMS[i];
+          return (
+            <motion.div
+              key={field.key}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.05 }}
+              className="rounded-xl bg-card border border-border p-2 text-center shadow-sm"
+            >
+              <span className="text-lg block">{info.icon}</span>
+              <span className={`text-xs font-medium block mt-0.5 ${chipColors[field.value]}`}>
+                {info.options[field.value].label}
+              </span>
+            </motion.div>
+          );
+        })}
+      </div>
+
+      {/* Actions */}
+      <div className="flex gap-3">
         <button
-          onClick={() => setEditing(false)}
-          className="mt-2 w-full py-2 text-center text-sm text-muted-foreground hover:text-foreground"
+          onClick={editCheck}
+          className="flex-1 flex items-center justify-center gap-2 rounded-2xl bg-secondary py-3 text-sm font-medium text-secondary-foreground touch-target"
         >
-          취소
+          <Edit3 className="h-4 w-4" /> 수정하기
         </button>
-      )}
+        <button
+          onClick={() => navigate('/patterns')}
+          className="flex-1 flex items-center justify-center gap-2 rounded-2xl bg-primary/10 py-3 text-sm font-medium text-primary touch-target"
+        >
+          패턴 보기 <ArrowRight className="h-4 w-4" />
+        </button>
+      </div>
     </AppLayout>
   );
 }
