@@ -8,6 +8,7 @@ import { ProtectedRoute, AdminRoute } from "@/components/ProtectedRoute";
 import LoginPage from "@/pages/LoginPage";
 import SignupPage from "@/pages/SignupPage";
 import TodayPage from "@/pages/TodayPage";
+import CheckPage from "@/pages/CheckPage";
 import HistoryPage from "@/pages/HistoryPage";
 import PatternsPage from "@/pages/PatternsPage";
 import SettingsPage from "@/pages/SettingsPage";
@@ -27,6 +28,7 @@ const App = () => (
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
             <Route path="/" element={<ProtectedRoute><TodayPage /></ProtectedRoute>} />
+            <Route path="/check" element={<ProtectedRoute><CheckPage /></ProtectedRoute>} />
             <Route path="/history" element={<ProtectedRoute><HistoryPage /></ProtectedRoute>} />
             <Route path="/patterns" element={<ProtectedRoute><PatternsPage /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />

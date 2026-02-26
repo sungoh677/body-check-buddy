@@ -6,39 +6,39 @@
 
 @layer base {
   :root {
-    --background: 210 20% 98%;
-    --foreground: 220 20% 15%;
+    --background: 220 15% 96%;
+    --foreground: 220 25% 12%;
 
     --card: 0 0% 100%;
-    --card-foreground: 220 20% 15%;
+    --card-foreground: 220 25% 12%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 20% 15%;
+    --popover-foreground: 220 25% 12%;
 
-    --primary: 220 60% 50%;
+    --primary: 215 90% 56%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 25% 93%;
-    --secondary-foreground: 220 20% 25%;
+    --secondary: 220 14% 92%;
+    --secondary-foreground: 220 20% 30%;
 
-    --muted: 210 20% 95%;
-    --muted-foreground: 220 10% 50%;
+    --muted: 220 14% 94%;
+    --muted-foreground: 220 10% 46%;
 
-    --accent: 170 50% 45%;
+    --accent: 175 60% 42%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 65% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 210 20% 90%;
-    --input: 210 20% 90%;
-    --ring: 220 60% 50%;
+    --border: 220 13% 90%;
+    --input: 220 13% 90%;
+    --ring: 215 90% 56%;
 
     --radius: 1rem;
 
-    --success: 150 50% 45%;
+    --success: 155 55% 42%;
     --success-foreground: 0 0% 100%;
-    --warning: 38 90% 55%;
+    --warning: 38 85% 52%;
     --warning-foreground: 0 0% 100%;
 
     --sidebar-background: 0 0% 98%;
@@ -48,35 +48,35 @@
     --sidebar-accent: 240 4.8% 95.9%;
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-ring: 215 90% 56%;
 
     /* Score level colors */
-    --score-good: 150 50% 45%;
-    --score-mild: 38 70% 55%;
+    --score-good: 155 55% 42%;
+    --score-mild: 38 75% 52%;
     --score-moderate: 20 80% 55%;
-    --score-severe: 0 65% 55%;
+    --score-severe: 0 65% 52%;
   }
 
   .dark {
-    --background: 220 20% 10%;
+    --background: 220 20% 8%;
     --foreground: 210 20% 92%;
-    --card: 220 20% 14%;
+    --card: 220 18% 12%;
     --card-foreground: 210 20% 92%;
-    --popover: 220 20% 14%;
+    --popover: 220 18% 12%;
     --popover-foreground: 210 20% 92%;
-    --primary: 220 60% 60%;
+    --primary: 215 85% 60%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 220 15% 22%;
+    --secondary: 220 15% 20%;
     --secondary-foreground: 210 20% 85%;
-    --muted: 220 15% 18%;
+    --muted: 220 15% 16%;
     --muted-foreground: 210 10% 55%;
-    --accent: 170 50% 50%;
+    --accent: 175 55% 48%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
-    --border: 220 15% 22%;
-    --input: 220 15% 22%;
-    --ring: 220 60% 60%;
+    --border: 220 15% 20%;
+    --input: 220 15% 20%;
+    --ring: 215 85% 60%;
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
@@ -84,11 +84,11 @@
     --sidebar-accent: 240 3.7% 15.9%;
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
-    --score-good: 150 50% 50%;
-    --score-mild: 38 70% 60%;
-    --score-moderate: 20 80% 60%;
-    --score-severe: 0 65% 60%;
+    --sidebar-ring: 215 90% 56%;
+    --score-good: 155 55% 48%;
+    --score-mild: 38 75% 58%;
+    --score-moderate: 20 80% 58%;
+    --score-severe: 0 65% 58%;
   }
 }
 
@@ -108,3 +108,32 @@
     @apply min-h-[44px] min-w-[44px];
   }
 }
+
+/* Body check guide animations */
+@keyframes neck-rotate {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-15deg); }
+  75% { transform: rotate(15deg); }
+}
+@keyframes jaw-open {
+  0%, 100% { transform: scaleY(1); }
+  50% { transform: scaleY(1.15); }
+}
+@keyframes breath-expand {
+  0%, 100% { transform: scale(1); opacity: 0.7; }
+  50% { transform: scale(1.2); opacity: 1; }
+}
+@keyframes eye-blink {
+  0%, 40%, 100% { transform: scaleY(1); }
+  45%, 55% { transform: scaleY(0.1); }
+}
+@keyframes energy-rise {
+  0%, 100% { transform: translateY(4px) scale(0.95); opacity: 0.6; }
+  50% { transform: translateY(-4px) scale(1.05); opacity: 1; }
+}
+
+.anim-neck { animation: neck-rotate 3s ease-in-out infinite; }
+.anim-jaw { animation: jaw-open 2.5s ease-in-out infinite; }
+.anim-breath { animation: breath-expand 4s ease-in-out infinite; }
+.anim-eye { animation: eye-blink 3s ease-in-out infinite; }
+.anim-energy { animation: energy-rise 3s ease-in-out infinite; }
