@@ -23,6 +23,7 @@ export default function PatternsPage() {
   const { user } = useAuth();
   const [thisWeek, setThisWeek] = useState<DailyCheck[]>([]);
   const [lastWeek, setLastWeek] = useState<DailyCheck[]>([]);
+  const [userProfile, setUserProfile] = useState<{ age: number | null, gender: string | null } | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -34,7 +35,7 @@ export default function PatternsPage() {
     const weekAgo = format(subDays(now, 7), 'yyyy-MM-dd');
     const twoWeeksAgo = format(subDays(now, 14), 'yyyy-MM-dd');
 
-    const [thisRes, lastRes] = await Promise.all([
+    const [thisRes, lastRes, profileRes] = await Promise.all([
       supabase
         .from('daily_checks')
         .select('date, neck_shoulder, jaw, breath, eyes, energy, total_score')
@@ -48,10 +49,16 @@ export default function PatternsPage() {
         .gte('date', twoWeeksAgo)
         .lt('date', weekAgo)
         .order('date', { ascending: true }),
+      supabase
+        .from('profiles')
+        .select('age, gender')
+        .eq('id', user!.id)
+        .maybeSingle(),
     ]);
 
     setThisWeek(thisRes.data ?? []);
     setLastWeek(lastRes.data ?? []);
+    setUserProfile(profileRes.data ?? null);
     setLoading(false);
   };
 
@@ -106,6 +113,19 @@ export default function PatternsPage() {
 
   // Comparison
   const diff = lastAvg ? (parseFloat(avg) - parseFloat(lastAvg)).toFixed(1) : null;
+
+  // Mock Age/Gender Stats based on profile
+  const getDemographicLabel = () => {
+    if (!userProfile?.age && !userProfile?.gender) return '비슷한 연령대';
+    const ageGroup = userProfile.age ? `${Math.floor(userProfile.age / 10) * 10}대` : '';
+    const genderLabel = userProfile.gender === 'Male' ? '남성' : userProfile.gender === 'Female' ? '여성' : '';
+    return `${ageGroup} ${genderLabel}`.trim();
+  };
+
+  const demographicAvg = 4.2; // Mock avg
+  const compareText = parseFloat(avg) > demographicAvg
+    ? '평균보다 피로도가 높습니다'
+    : '평균보다 피로도가 낮습니다';
 
   return (
     <AppLayout>
@@ -201,9 +221,8 @@ export default function PatternsPage() {
               ) : (
                 <Minus className="h-5 w-5 text-muted-foreground" />
               )}
-              <span className={`text-sm font-bold ${
-                parseFloat(diff!) > 0 ? 'text-score-severe' : parseFloat(diff!) < 0 ? 'text-score-good' : 'text-muted-foreground'
-              }`}>
+              <span className={`text-sm font-bold ${parseFloat(diff!) > 0 ? 'text-score-severe' : parseFloat(diff!) < 0 ? 'text-score-good' : 'text-muted-foreground'
+                }`}>
                 {parseFloat(diff!) > 0 ? '+' : ''}{diff}
               </span>
             </div>
@@ -215,6 +234,51 @@ export default function PatternsPage() {
         ) : (
           <p className="text-sm text-muted-foreground">다음 주부터 비교가 제공됩니다.</p>
         )}
+      </motion.div>
+
+      {/* Demographic Comparison */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+        className="rounded-2xl bg-card p-4 shadow-sm border border-border mb-4"
+      >
+        <div className="flex justify-between items-center mb-3">
+          <h2 className="text-sm font-semibold text-foreground">그룹 비교</h2>
+          <span className="text-xs bg-secondary px-2 py-0.5 rounded-full text-secondary-foreground">
+            {getDemographicLabel()}
+          </span>
+        </div>
+
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center gap-4">
+            <div className="w-16 text-right text-xs text-muted-foreground">나</div>
+            <div className="flex-1 bg-secondary rounded-full h-2 relative">
+              <div
+                className="absolute top-0 left-0 h-full bg-primary rounded-full transition-all duration-1000"
+                style={{ width: `${(parseFloat(avg) / 10) * 100}%` }}
+              />
+            </div>
+            <div className="w-8 text-sm font-bold text-foreground">{avg}</div>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <div className="w-16 text-right text-xs text-muted-foreground">평균</div>
+            <div className="flex-1 bg-secondary rounded-full h-2 relative">
+              <div
+                className="absolute top-0 left-0 h-full bg-muted-foreground/40 rounded-full transition-all duration-1000"
+                style={{ width: `${(demographicAvg / 10) * 100}%` }}
+              />
+            </div>
+            <div className="w-8 text-sm text-muted-foreground">{demographicAvg}</div>
+          </div>
+        </div>
+
+        <p className="text-xs text-center text-muted-foreground mt-4 pb-1">
+          {userProfile?.age || userProfile?.gender
+            ? `같은 그룹 평균 대비 나의 평균이 ${Math.abs(parseFloat(avg) - demographicAvg).toFixed(1)}점 ${parseFloat(avg) > demographicAvg ? '높습니다.' : '낮습니다.'}`
+            : '설정에서 나이와 성별을 입력하면 맞춤 비교가 제공됩니다.'}
+        </p>
       </motion.div>
 
       {/* Summary */}

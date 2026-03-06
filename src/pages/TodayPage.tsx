@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { calculateTotalScore, getSummaryText, getResetText, getScoreLevel, CHECK_ITEMS, CheckData } from '@/lib/bodycheck';
+import { calculateTotalScore, getSummaryText, getResetText, getScoreLevel, getAiCoachingMessage, CHECK_ITEMS, CheckData } from '@/lib/bodycheck';
 import AppLayout from '@/components/AppLayout';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
@@ -129,6 +129,14 @@ export default function TodayPage() {
 
   const chipColors = ['text-score-good', 'text-score-mild', 'text-score-severe'];
 
+  const aiMessage = getAiCoachingMessage({
+    neckShoulder: todayCheck.neck_shoulder,
+    jaw: todayCheck.jaw,
+    breath: todayCheck.breath,
+    eyes: todayCheck.eyes,
+    energy: todayCheck.energy
+  });
+
   return (
     <AppLayout>
       <div className="mb-5">
@@ -165,16 +173,19 @@ export default function TodayPage() {
           </div>
 
           <div className="flex-1 min-w-0">
-            <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium mb-1 ${
-              level === 'good' ? 'bg-score-good/15 text-score-good' :
-              level === 'mild' ? 'bg-score-mild/15 text-score-mild' :
-              level === 'moderate' ? 'bg-score-moderate/15 text-score-moderate' :
-              'bg-score-severe/15 text-score-severe'
-            }`}>
+            <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium mb-1 ${level === 'good' ? 'bg-score-good/15 text-score-good' :
+                level === 'mild' ? 'bg-score-mild/15 text-score-mild' :
+                  level === 'moderate' ? 'bg-score-moderate/15 text-score-moderate' :
+                    'bg-score-severe/15 text-score-severe'
+              }`}>
               {levelLabel[level]}
             </span>
             <p className="text-sm font-medium text-foreground leading-relaxed">{todayCheck.summary_text}</p>
-            <p className="text-xs text-muted-foreground mt-1">💡 {todayCheck.reset_text}</p>
+
+            <div className="mt-3 p-3 rounded-xl bg-primary/5 border border-primary/20">
+              <p className="text-xs font-semibold text-primary mb-1">AI 코칭</p>
+              <p className="text-xs text-muted-foreground leading-relaxed">{aiMessage}</p>
+            </div>
           </div>
         </div>
       </motion.div>
